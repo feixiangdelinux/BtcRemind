@@ -5,14 +5,25 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Build
-import android.os.Bundle
+import android.os.IBinder
 import android.util.Log
-import androidx.appcompat.app.AppCompatActivity
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.disposables.Disposable
+import io.reactivex.schedulers.Schedulers
 import java.util.*
 
-class MainActivity : AppCompatActivity() {
 
-
+/**
+ * @author : C4_雍和
+ * 描述 :
+ * 主要功能 :
+ * 维护人员 : C4_雍和
+ * date : 20-4-11 下午2:57
+ */
+class TestOneService : Service() {
+    private val repository by lazy { NetRepository() }
+    private val compositeDisposable by lazy { CompositeDisposable() }
     private val groupId = "groupId"
     private val groupName: CharSequence = "Group1"
 
@@ -29,19 +40,98 @@ class MainActivity : AppCompatActivity() {
     private val adChannelName = "广告通知"
     private val adChannelDesc = "这是一个广告通知，可以关闭的，但是如果您希望我们做出更好的软件服务于你，请打开广告支持一下吧"
     private val adChannelImportance = NotificationManager.IMPORTANCE_LOW
-    var context = this
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-        startService(Intent(context, TestOneService::class.java))
-//        val mNotificationManager: NotificationManager =
-//            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-//        createGroup(mNotificationManager)
-//        notification(mNotificationManager)
 
+    lateinit var mNotificationManager: NotificationManager
+
+    /**
+     * 首次创建服务时，系统将调用此方法。如果服务已在运行，则不会调用此方法，该方法只调用一次。
+     */
+    override fun onCreate() {
+        super.onCreate()
+        Log.e("250:  ", "onCreate")
+        mNotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        createGroup(mNotificationManager)
     }
 
-    private fun notification(mNotificationManager: NotificationManager) {
+    /**
+     * 当另一个组件通过调用startService()请求启动服务时，系统将调用此方法。
+     * @param intent Intent
+     * @param flags Int
+     * @param startId Int
+     * @return Int
+     */
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val timer = Timer()
+        timer.schedule(object : TimerTask() {
+            override fun run() {
+        addDisposable(
+            repository.getListData()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe({
+                    it.data.prices[0].price
+                    Log.e("250:", "" + it.data.prices[0].toString())
+                    notification(mNotificationManager,"当前价格",it.data.prices[0].price)
+                }, {
+                    Log.e("250:", "" + it.message)
+                })
+        )
+            }
+        }, 0, 900000)
+        return super.onStartCommand(intent, flags, startId)
+    }
+
+    /**
+     * 当服务不再使用且将被销毁时，系统将调用此方法。
+     */
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.e("250:  ", "onDestroy")
+        compositeDisposable.clear()
+    }
+
+    /**
+     * 当另一个组件通过调用bindService()与服务绑定时，系统将调用此方法。
+     * @param intent Intent
+     * @return IBinder?
+     */
+    override fun onBind(intent: Intent?): IBinder? {
+        Log.e("250:  ", "onBind")
+        return null
+    }
+
+    /**
+     * 当另一个组件通过调用unbindService()与服务解绑时，系统将调用此方法。
+     * @param intent Intent
+     * @return Boolean
+     */
+    override fun onUnbind(intent: Intent?): Boolean {
+        Log.e("250:  ", "onUnbind")
+        return super.onUnbind(intent)
+    }
+
+    /**
+     * 当旧的组件与服务解绑后，另一个新的组件与服务绑定，onUnbind()返回true时，系统将调用此方法。
+     * @param intent Intent
+     */
+    override fun onRebind(intent: Intent?) {
+        super.onRebind(intent)
+        Log.e("250:  ", "onRebind")
+    }
+
+    /**
+     * 添加订阅
+     * @param disposable Disposable
+     */
+    private fun addDisposable(disposable: Disposable) {
+        compositeDisposable.add(disposable)
+    }
+
+    private fun notification(
+        mNotificationManager: NotificationManager,
+        title: String,
+        pic: String
+    ) {
         createNotificationChannel(
             chatChannelId,
             chatChannelName,
@@ -53,8 +143,8 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             builder = Notification.Builder(this, chatChannelId)
             builder.setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("我是标题")
-                .setContentText("内容：Today released Android 8.0 version of its name is Oreo")
+                .setContentTitle(title)
+                .setContentText(pic)
                 .setBadgeIconType(Notification.BADGE_ICON_SMALL)
                 .setNumber(1)
                 .setAutoCancel(true)
@@ -72,7 +162,6 @@ class MainActivity : AppCompatActivity() {
             )
         }
     }
-
 
     private fun createNotificationChannel(
         id: String?,
@@ -131,33 +220,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        Log.e("250:1", "onStart")
-    }
+    class sdsfd : DownTimerListener {
+        override fun onFinish() {
+            Log.e("250:", "aaaaaaaaaaaa")
+            DownTimer.getInstance().startDown(1000)
+        }
 
-    override fun onResume() {
-        super.onResume()
-        Log.e("250:1", "onResume")
-    }
+        override fun onTick(millisUntilFinished: Long) {
+        }
 
-    override fun onRestart() {
-        super.onRestart()
-        Log.e("250:1", "onRestart")
-    }
-
-    override fun onPause() {
-        super.onPause()
-        Log.e("250:1", "onPause")
-    }
-
-    override fun onStop() {
-        super.onStop()
-        Log.e("250:1", "onStop")
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        Log.e("250:1", "onDestroy")
     }
 }
