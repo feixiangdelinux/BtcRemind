@@ -41,14 +41,13 @@ class TestOneService : Service() {
     private val adChannelDesc = "这是一个广告通知，可以关闭的，但是如果您希望我们做出更好的软件服务于你，请打开广告支持一下吧"
     private val adChannelImportance = NotificationManager.IMPORTANCE_LOW
 
-    lateinit var mNotificationManager: NotificationManager
+    private lateinit  var mNotificationManager: NotificationManager
 
     /**
      * 首次创建服务时，系统将调用此方法。如果服务已在运行，则不会调用此方法，该方法只调用一次。
      */
     override fun onCreate() {
         super.onCreate()
-        Log.e("250:  ", "onCreate")
         mNotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createGroup(mNotificationManager)
     }
@@ -70,8 +69,7 @@ class TestOneService : Service() {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
                     it.data.prices[0].price
-                    Log.e("250:", "" + it.data.prices[0].toString())
-                    notification(mNotificationManager,"当前价格",it.data.prices[0].price)
+                    PriceUtil.saveCurrentPrice(it.data.prices[0].price,this@TestOneService)
                 }, {
                     Log.e("250:", "" + it.message)
                 })
@@ -127,8 +125,7 @@ class TestOneService : Service() {
         compositeDisposable.add(disposable)
     }
 
-    private fun notification(
-        mNotificationManager: NotificationManager,
+     fun notification(
         title: String,
         pic: String
     ) {
@@ -218,16 +215,5 @@ class TestOneService : Service() {
                 groupId, mNotificationManager
             )
         }
-    }
-
-    class sdsfd : DownTimerListener {
-        override fun onFinish() {
-            Log.e("250:", "aaaaaaaaaaaa")
-            DownTimer.getInstance().startDown(1000)
-        }
-
-        override fun onTick(millisUntilFinished: Long) {
-        }
-
     }
 }

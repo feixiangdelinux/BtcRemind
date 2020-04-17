@@ -1,163 +1,98 @@
 package com.ccg.btcremind
 
-import android.app.*
-import android.content.Context
 import android.content.Intent
-import android.graphics.Color
-import android.os.Build
 import android.os.Bundle
-import android.util.Log
+import android.widget.CheckBox
+import android.widget.EditText
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import java.util.*
+import com.jakewharton.rxbinding3.widget.checkedChanges
+import com.jakewharton.rxbinding3.widget.textChanges
+import io.reactivex.Observable
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.disposables.Disposable
 
 class MainActivity : AppCompatActivity() {
-
-
-    private val groupId = "groupId"
-    private val groupName: CharSequence = "Group1"
-
-    private val groupId2 = "groupId2"
-    private val groupName2: CharSequence = "Group2"
-    private val chatChannelId2 = "chatChannelId2"
-    private val adChannelId2 = "adChannelId2"
-
-    private val chatChannelId = "chatChannelId"
-    private val chatChannelName = "聊天通知"
-    private val chatChannelDesc = "这是一个聊天通知，建议您置于开启状态，这样才不会漏掉女朋友的消息哦"
-    private val chatChannelImportance = NotificationManager.IMPORTANCE_MAX
-
-    private val adChannelName = "广告通知"
-    private val adChannelDesc = "这是一个广告通知，可以关闭的，但是如果您希望我们做出更好的软件服务于你，请打开广告支持一下吧"
-    private val adChannelImportance = NotificationManager.IMPORTANCE_LOW
     var context = this
+    private val compositeDisposable by lazy { CompositeDisposable() }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        //启动后台服务,实时联网获取价格
         startService(Intent(context, TestOneService::class.java))
-//        val mNotificationManager: NotificationManager =
-//            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-//        createGroup(mNotificationManager)
-//        notification(mNotificationManager)
-
+        initData()
+//        CustomerDialog.show(context,"你有一条新订单")
     }
 
-    private fun notification(mNotificationManager: NotificationManager) {
-        createNotificationChannel(
-            chatChannelId,
-            chatChannelName,
-            chatChannelImportance,
-            chatChannelDesc,
-            groupId2, mNotificationManager
-        )
-        var builder: Notification.Builder? = null
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            builder = Notification.Builder(this, chatChannelId)
-            builder.setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("我是标题")
-                .setContentText("内容：Today released Android 8.0 version of its name is Oreo")
-                .setBadgeIconType(Notification.BADGE_ICON_SMALL)
-                .setNumber(1)
-                .setAutoCancel(true)
-            val resultIntent = Intent(this, MainActivity::class.java)
-            val stackBuilder =
-                TaskStackBuilder.create(this)
-            stackBuilder.addParentStack(MainActivity::class.java)
-            stackBuilder.addNextIntent(resultIntent)
-            val resultPendingIntent =
-                stackBuilder.getPendingIntent(0, PendingIntent.FLAG_ONE_SHOT)
-            builder.setContentIntent(resultPendingIntent)
-            mNotificationManager.notify(
-                System.currentTimeMillis().toInt(),
-                builder.build()
-            )
-        }
+    private fun initData() {
+        //涨到多少提醒
+        addDisposable(findViewById<EditText>(R.id.main_et_one).textChanges().filter {
+            return@filter !android.text.TextUtils.isEmpty(it.toString())
+        }.flatMap {
+            return@flatMap Observable.just(it.toString())
+        }.subscribe({
+            val price = it.toDouble()
+            PriceUtil.one = price
+        }, {
+            Toast.makeText(context, "输入的价格格式不正确，比如 124.58", Toast.LENGTH_LONG).show()
+        }))
+        //跌到多少提醒
+        addDisposable(findViewById<EditText>(R.id.main_et_two).textChanges().filter {
+            return@filter !android.text.TextUtils.isEmpty(it.toString())
+        }.flatMap {
+            return@flatMap Observable.just(it.toString())
+        }.subscribe({
+            val price = it.toDouble()
+            PriceUtil.two = price
+        }, {
+            Toast.makeText(context, "输入的价格格式不正确，比如 124.58", Toast.LENGTH_LONG).show()
+        }))
+        //比15分钟前高多少提醒
+        addDisposable(findViewById<EditText>(R.id.main_et_three).textChanges().filter {
+            return@filter !android.text.TextUtils.isEmpty(it.toString())
+        }.flatMap {
+            return@flatMap Observable.just(it.toString())
+        }.subscribe({
+            val price = it.toDouble()
+            PriceUtil.three = price
+        }, {
+            Toast.makeText(context, "输入的价格格式不正确，比如 124.58", Toast.LENGTH_LONG).show()
+        }))
+        //比15分钟前低多少提醒
+        addDisposable(findViewById<EditText>(R.id.main_et_four).textChanges().filter {
+            return@filter !android.text.TextUtils.isEmpty(it.toString())
+        }.flatMap {
+            return@flatMap Observable.just(it.toString())
+        }.subscribe({
+            val price = it.toDouble()
+            PriceUtil.four = price
+        }, {
+            Toast.makeText(context, "输入的价格格式不正确，比如 124.58", Toast.LENGTH_LONG).show()
+        }))
+        //和以前的100次价格中最低的价格进行比较如果比最低的价格还低就提醒
+        addDisposable(findViewById<CheckBox>(R.id.main_cb_five).checkedChanges().subscribe({
+            PriceUtil.five = it
+        }, {
+            Toast.makeText(context, "输入的价格格式不正确，比如 124.58", Toast.LENGTH_LONG).show()
+        }))
+        //和以前的100次价格中最高的价格进行比较如果比最高的价格还高就提醒
+        addDisposable(findViewById<CheckBox>(R.id.main_cb_six).checkedChanges().subscribe({
+            PriceUtil.six = it
+        }, {
+            Toast.makeText(context, "输入的价格格式不正确，比如 124.58", Toast.LENGTH_LONG).show()
+        }))
     }
 
-
-    private fun createNotificationChannel(
-        id: String?,
-        name: String?,
-        importance: Int,
-        desc: String?,
-        groupId: String?,
-        mNotificationManager: NotificationManager
-    ) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            if (mNotificationManager.getNotificationChannel(id) != null) {
-                return
-            }
-            val notificationChannel = NotificationChannel(id, name, importance)
-            notificationChannel.enableLights(true)
-            notificationChannel.enableVibration(true)
-            notificationChannel.lightColor = Color.RED
-            notificationChannel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
-            notificationChannel.setShowBadge(true)
-            notificationChannel.setBypassDnd(true)
-            notificationChannel.vibrationPattern = longArrayOf(100, 200, 300, 400)
-            notificationChannel.description = desc
-            notificationChannel.group = groupId
-            mNotificationManager.createNotificationChannel(notificationChannel)
-        }
-    }
-
-    private fun createGroup(mNotificationManager: NotificationManager) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            mNotificationManager.createNotificationChannelGroup(
-                NotificationChannelGroup(
-                    groupId,
-                    groupName
-                )
-            )
-            mNotificationManager.createNotificationChannelGroup(
-                NotificationChannelGroup(
-                    groupId2,
-                    groupName2
-                )
-            )
-            createNotificationChannel(
-                chatChannelId2,
-                chatChannelName,
-                chatChannelImportance,
-                chatChannelDesc,
-                groupId, mNotificationManager
-            )
-            createNotificationChannel(
-                adChannelId2,
-                adChannelName,
-                adChannelImportance,
-                adChannelDesc,
-                groupId, mNotificationManager
-            )
-        }
-    }
-
-    override fun onStart() {
-        super.onStart()
-        Log.e("250:1", "onStart")
-    }
-
-    override fun onResume() {
-        super.onResume()
-        Log.e("250:1", "onResume")
-    }
-
-    override fun onRestart() {
-        super.onRestart()
-        Log.e("250:1", "onRestart")
-    }
-
-    override fun onPause() {
-        super.onPause()
-        Log.e("250:1", "onPause")
-    }
-
-    override fun onStop() {
-        super.onStop()
-        Log.e("250:1", "onStop")
+    /**
+     * 添加订阅
+     * @param disposable Disposable
+     */
+    private fun addDisposable(disposable: Disposable) {
+        compositeDisposable.add(disposable)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.e("250:1", "onDestroy")
+        compositeDisposable.clear()
     }
 }
