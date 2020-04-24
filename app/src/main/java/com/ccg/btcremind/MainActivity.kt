@@ -21,6 +21,7 @@ class MainActivity : AppCompatActivity() {
         //启动后台服务,实时联网获取价格
         startService(Intent(context, TestOneService::class.java))
         initData()
+
 //        CustomerDialog.show(context,"你有一条新订单")
     }
 
