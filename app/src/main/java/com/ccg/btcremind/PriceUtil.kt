@@ -156,11 +156,8 @@ object PriceUtil {
         if (isCheck) {
             val minPrice = Collections.min(allPrice)
             if (currentPrice <= minPrice) {
-                Log.e("250:", "1111")
                 //提醒用户，当前价格和以前的100次价格中最低的价格进行比较如果比最低的价格还低就提醒
                 service.notification("当前价格和前100次比已经达到最低的价格", "当前价格${currentPrice}  历史最高${allPrice.max()}  历史最低${allPrice.min()}  平均价格${allPrice.average()}")
-            }else{
-                Log.e("250:", "2222")
             }
         }
     }

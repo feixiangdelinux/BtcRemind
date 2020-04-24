@@ -42,8 +42,6 @@ class TestOneService : Service() {
     private val adChannelImportance = NotificationManager.IMPORTANCE_LOW
 
     private lateinit var mNotificationManager: NotificationManager
-    private lateinit var sss: Notification
-
     /**
      * 首次创建服务时，系统将调用此方法。如果服务已在运行，则不会调用此方法，该方法只调用一次。
      */
@@ -69,10 +67,9 @@ class TestOneService : Service() {
                         .subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe({
-                            Log.e("250:", "aaaaaaaaaaaaaaaa" + it.data.prices[0].price)
                             it.data.prices[0].price
                             PriceUtil.saveCurrentPrice(it.data.prices[0].price, this@TestOneService)
-                            startForeground(110, sss)
+
                         }, {
                             Log.e("250:", "" + it.message)
                         })
@@ -156,11 +153,7 @@ class TestOneService : Service() {
             val resultPendingIntent =
                 stackBuilder.getPendingIntent(0, PendingIntent.FLAG_ONE_SHOT)
             builder.setContentIntent(resultPendingIntent)
-            val sss = builder.build()
-            mNotificationManager.notify(
-                System.currentTimeMillis().toInt(),
-                sss
-            )
+            startForeground(System.currentTimeMillis().toInt(), builder.build())
         }
     }
 
