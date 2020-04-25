@@ -1,16 +1,20 @@
 package com.ccg.btcremind
 
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.ixintui.push.Receiver
+import com.ixintui.pushsdk.PushSdkApi
 import com.jakewharton.rxbinding3.widget.checkedChanges
 import com.jakewharton.rxbinding3.widget.textChanges
 import io.reactivex.Observable
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
+
 
 class MainActivity : AppCompatActivity() {
     var context = this
@@ -18,6 +22,18 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        val ixintuiFilter = IntentFilter()
+        ixintuiFilter.addAction("com.ixintui.action.BROADCAST")
+        ixintuiFilter.addAction("android.intent.action.BOOT_COMPLETED")
+        ixintuiFilter.addAction("android.net.conn.CONNECTIVITY_CHANGE")
+        val ixintuiFilterRemove = IntentFilter()
+        ixintuiFilterRemove.addAction("android.intent.action.PACKAGE_REMOVED")
+        ixintuiFilterRemove.addDataScheme("package")
+        val ixintuiReceiver = Receiver()
+        registerReceiver(ixintuiReceiver, ixintuiFilter)
+        registerReceiver(ixintuiReceiver, ixintuiFilterRemove)
+        PushSdkApi.register(this, 1881902464, "爱心推" , "1.0")
+//        val extra = intent.getStringExtra(SdkConstants.ADDITION)
         //启动后台服务,实时联网获取价格
         startService(Intent(context, TestOneService::class.java))
         initData()
