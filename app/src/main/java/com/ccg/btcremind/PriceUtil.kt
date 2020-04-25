@@ -62,6 +62,10 @@ object PriceUtil {
             fourRemind(service, allPrice[allPrice.size - 1], doublePrice, four)
             fiveRemind(service, allPrice, doublePrice, five)
             sixRemind(service, allPrice, doublePrice, six)
+            if(allPrice.size>=100){
+                allPrice.removeAt(0)
+                allPrice.add(doublePrice)
+            }
         }
     }
 
