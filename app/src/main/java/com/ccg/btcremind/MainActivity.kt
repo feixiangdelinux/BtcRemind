@@ -7,6 +7,9 @@ import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequest
+import androidx.work.WorkManager
 import com.ixintui.push.Receiver
 import com.ixintui.pushsdk.PushSdkApi
 import com.jakewharton.rxbinding3.widget.checkedChanges
@@ -14,6 +17,7 @@ import com.jakewharton.rxbinding3.widget.textChanges
 import io.reactivex.Observable
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
+import java.util.concurrent.TimeUnit
 
 
 class MainActivity : AppCompatActivity() {
@@ -32,13 +36,22 @@ class MainActivity : AppCompatActivity() {
         val ixintuiReceiver = Receiver()
         registerReceiver(ixintuiReceiver, ixintuiFilter)
         registerReceiver(ixintuiReceiver, ixintuiFilterRemove)
-        PushSdkApi.register(this, 1881902464, "爱心推" , "1.0")
+        PushSdkApi.register(this, 1881902464, "爱心推", "1.0")
 //        val extra = intent.getStringExtra(SdkConstants.ADDITION)
         //启动后台服务,实时联网获取价格
         startService(Intent(context, TestOneService::class.java))
         initData()
 
 //        CustomerDialog.show(context,"你有一条新订单")
+
+        val alarmWork: PeriodicWorkRequest = PeriodicWorkRequest.Builder(
+            UploadWorker::class.java,
+            15,
+            TimeUnit.MINUTES
+        ).build()
+        WorkManager.getInstance(context).enqueue(alarmWork)
+//        val uploadWorkRequest = OneTimeWorkRequestBuilder<UploadWorker>().build()
+//        WorkManager.getInstance(context).enqueue(uploadWorkRequest)
     }
 
     private fun initData() {
